@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TECNOINNOVA S.A - Sistema de Gestión</title>
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* ===== ESTILOS GENERALES ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #0b2b40;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(255,255,255,0.95);
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+            padding: 2rem;
+        }
+        /* ===== HEADER ===== */
+        .header {
+            background: #0a2e38;
+            color: white;
+            padding: 1.2rem 1.5rem;
+            border-radius: 1rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .header h1 { font-size: 1.6rem; letter-spacing: -0.5px; }
+        .header p { opacity: 0.8; margin-top: 0.3rem; }
+        /* ===== FORMULARIOS DE AUTENTICACIÓN ===== */
+        #authSection {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #f9fafc;
+            padding: 2rem;
+            border-radius: 1.2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        #authSection h2 {
+            text-align: center;
+            color: #0f3b44;
+            margin-bottom: 1.2rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #0f3b44;
+            margin-bottom: 0.3rem;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.8rem;
+            font-size: 0.95rem;
+            background: white;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #1d6f6b;
+            box-shadow: 0 0 0 3px rgba(29,111,107,0.2);
+        }
+        .btn {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+        .btn-primary { background: #1d6f6b; color: white; }
+        .btn-primary:hover { background: #0e5551; transform: scale(0.98); }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover { background: #5a6268; }
+        .btn-danger { background: #d62828; color: white; }
+        .btn-danger:hover { background: #b71c1c; }
+        .auth-switch {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        .auth-switch a {
+            color: #1d6f6b;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .auth-switch a:hover { text-decoration: underline; }
+        .error-msg {
+            color: #d62828;
+            background: #ffeaea;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+        .success-msg {
+            color: #2b9348;
+            background: #e9f8ef;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+        /* ===== DASHBOARD (logueado) ===== */
+        #dashboard {
+            display: none;
+        }
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #cbd5e1;
+        }
+        .dashboard-header h2 {
+            color: #0f3b44;
+        }
+        .dashboard-header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .dashboard-header .user-info span {
+            font-weight: 600;
+            color: #0f3b44;
+        }
+        .btn-sm {
+            padding: 0.4rem 1rem;
+            border: none;
+            border-radius: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-logout { background: #d62828; color: white; }
+        .btn-logout:hover { background: #b71c1c; }
+        /* ===== TABLAS ===== */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th, td {
+            border: 1px solid #cbd5e1;
+            padding: 0.5rem 0.7rem;
+            text-align: left;
+        }
+        th {
+            background: #e2edf2;
+            font-weight: 600;
+            color: #0a2e38;
+        }
+        tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+        .table-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0f3b44;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .dashboard-header { flex-direction: column; align-items: stretch; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- HEADER -->
+    <div class="header">
+        <h1><i class="fas fa-shield-alt"></i> TECNOINNOVA S.A</h1>
+        <p>Sistema de Gestión de Pedidos, Instalaciones y Facturación</p>
+    </div>
+
+    <!-- ===== SECCIÓN DE AUTENTICACIÓN ===== -->
+    <div id="authSection">
+        <h2 id="authTitle"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</h2>
+        <div id="authError" class="error-msg" style="display:none;"></div>
+        <div id="authSuccess" class="success-msg" style="display:none;"></div>
+
+        <div class="form-group">
+            <label for="authEmail">Correo Electrónico</label>
+            <input type="email" id="authEmail" placeholder="ejemplo@correo.com">
+        </div>
+        <div class="form-group">
+            <label for="authPassword">Contraseña</label>
+            <input type="password" id="authPassword" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary" id="authBtn">Iniciar Sesión</button>
+        <div class="auth-switch">
+            <span id="authSwitchText">¿No tienes cuenta?</span>
+            <a id="authSwitchLink">Regístrate aquí</a>
+        </div>
+    </div>
+
+    <!-- ===== DASHBOARD (logueado) ===== -->
+    <div id="dashboard">
+        <div class="dashboard-header">
+            <h2><i class="fas fa-tachometer-alt"></i> Panel de Control</h2>
+            <div class="user-info">
+                <span><i class="fas fa-user"></i> <span id="userName">Usuario</span></span>
+                <button class="btn-sm btn-logout" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</button>
+            </div>
+        </div>
+
+        <!-- ===== BOTONES PARA CARGAR DATOS ===== -->
+        <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+            <button class="btn btn-primary" style="width:auto; padding:0.5rem 1.2rem;" data-table="clientes"><i class="fas fa-users"></i> Clientes</button>
+            <button class="btn btn-primary" style="width:auto; padding:0.5rem 1.2rem;" data-table="pedidos"><i class="fas fa-shopping-cart"></i> Pedidos</button>
+            <button class="btn btn-primary" style="width:auto; padding:0.5rem 1.2rem;" data-table="tecnicos"><i class="fas fa-user-cog"></i> Técnicos</button>
+            <button class="btn btn-primary" style="width:auto; padding:0.5rem 1.2rem;" data-table="productos"><i class="fas fa-box"></i> Productos</button>
+            <button class="btn btn-primary" style="width:auto; padding:0.5rem 1.2rem;" data-table="facturas"><i class="fas fa-file-invoice"></i> Facturas</button>
+        </div>
+
+        <!-- ===== CONTENEDOR DE DATOS ===== -->
+        <div id="dataContainer">
+            <p style="color:#5e7a8c; text-align:center; padding:2rem;">
+                <i class="fas fa-info-circle"></i> Selecciona una tabla para visualizar los datos
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // 1. CONFIGURACIÓN DE SUPABASE
+    // ============================================================
+    // ⚠️ REEMPLAZA ESTOS DATOS CON LOS TUYOS ⚠️
+    const SUPABASE_URL = 'https://cklsktrbmkefeyglygjk.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_CILUWuBHSU1y0VsKPjp2KA_Zh2z5ePn';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ============================================================
+    // 2. ELEMENTOS DEL DOM
+    // ============================================================
+    const authSection = document.getElementById('authSection');
+    const dashboard = document.getElementById('dashboard');
+    const authTitle = document.getElementById('authTitle');
+    const authBtn = document.getElementById('authBtn');
+    const authSwitchLink = document.getElementById('authSwitchLink');
+    const authSwitchText = document.getElementById('authSwitchText');
+    const authEmail = document.getElementById('authEmail');
+    const authPassword = document.getElementById('authPassword');
+    const authError = document.getElementById('authError');
+    const authSuccess = document.getElementById('authSuccess');
+    const userName = document.getElementById('userName');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const dataContainer = document.getElementById('dataContainer');
+
+    let isLogin = true; // true = login, false = registro
+
+    // ============================================================
+    // 3. FUNCIONES DE AUTENTICACIÓN
+    // ============================================================
+    function showError(msg) {
+        authError.textContent = msg;
+        authError.style.display = 'block';
+        authSuccess.style.display = 'none';
+    }
+    function showSuccess(msg) {
+        authSuccess.textContent = msg;
+        authSuccess.style.display = 'block';
+        authError.style.display = 'none';
+    }
+    function clearMessages() {
+        authError.style.display = 'none';
+        authSuccess.style.display = 'none';
+    }
+
+    async function handleAuth() {
+        clearMessages();
+        const email = authEmail.value.trim();
+        const password = authPassword.value.trim();
+
+        if (!email || !password) {
+            showError('Por favor completa todos los campos.');
+            return;
+        }
+
+        let result;
+        if (isLogin) {
+            // Iniciar sesión
+            result = await supabase.auth.signInWithPassword({ email, password });
+        } else {
+            // Registro
+            result = await supabase.auth.signUp({ email, password });
+        }
+
+        const { data, error } = result;
+
+        if (error) {
+            showError(error.message);
+            return;
+        }
+
+        if (isLogin) {
+            showSuccess('¡Inicio de sesión exitoso!');
+            setTimeout(() => {
+                authSection.style.display = 'none';
+                dashboard.style.display = 'block';
+                const user = data.user;
+                userName.textContent = user.email || 'Usuario';
+            }, 500);
+        } else {
+            showSuccess('¡Registro exitoso! Revisa tu correo para confirmar la cuenta.');
+            // Limpiar campos
+            authEmail.value = '';
+            authPassword.value = '';
+            // Cambiar a modo login
+            isLogin = true;
+            authTitle.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
+            authBtn.textContent = 'Iniciar Sesión';
+            authSwitchText.textContent = '¿No tienes cuenta?';
+            authSwitchLink.textContent = 'Regístrate aquí';
+        }
+    }
+
+    // ============================================================
+    // 4. FUNCIONES PARA CARGAR DATOS DESDE SUPABASE
+    // ============================================================
+    async function loadTableData(tableName) {
+        dataContainer.innerHTML = '<p style="text-align:center; padding:1rem;"><i class="fas fa-spinner fa-spin"></i> Cargando datos...</p>';
+
+        try {
+            const { data, error } = await supabase
+                .from(tableName)
+                .select('*')
+                .limit(100);
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                dataContainer.innerHTML = `<p style="text-align:center; padding:1rem; color:#5e7a8c;">No hay datos en la tabla <strong>${tableName}</strong></p>`;
+                return;
+            }
+
+            // Construir tabla HTML
+            const columns = Object.keys(data[0]);
+            let html = `<div class="table-title"><i class="fas fa-table"></i> Tabla: ${tableName.toUpperCase()} (${data.length} registros)</div>`;
+            html += `<div class="table-container"><table><thead><tr>`;
+            columns.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            html += `</tr></thead><tbody>`;
+            data.forEach(row => {
+                html += `<tr>`;
+                columns.forEach(col => {
+                    let value = row[col];
+                    if (value === null || value === undefined) value = '—';
+                    if (typeof value === 'object') value = JSON.stringify(value);
+                    html += `<td>${value}</td>`;
+                });
+                html += `</tr>`;
+            });
+            html += `</tbody></table></div>`;
+            dataContainer.innerHTML = html;
+
+        } catch (error) {
+            console.error('Error al cargar datos:', error);
+            dataContainer.innerHTML = `<p style="color:#d62828; text-align:center; padding:1rem;">
+                <i class="fas fa-exclamation-circle"></i> Error al cargar los datos: ${error.message}
+            </p>`;
+        }
+    }
+
+    // ============================================================
+    // 5. VERIFICAR SESIÓN AL CARGAR LA PÁGINA
+    // ============================================================
+    async function checkSession() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            authSection.style.display = 'none';
+            dashboard.style.display = 'block';
+            userName.textContent = session.user.email || 'Usuario';
+        } else {
+            authSection.style.display = 'block';
+            dashboard.style.display = 'none';
+        }
+    }
+
+    // ============================================================
+    // 6. EVENT LISTENERS
+    // ============================================================
+    // Autenticación
+    authBtn.addEventListener('click', handleAuth);
+    authEmail.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleAuth(); });
+    authPassword.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleAuth(); });
+
+    // Cambiar entre login y registro
+    authSwitchLink.addEventListener('click', () => {
+        isLogin = !isLogin;
+        if (isLogin) {
+            authTitle.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
+            authBtn.textContent = 'Iniciar Sesión';
+            authSwitchText.textContent = '¿No tienes cuenta?';
+            authSwitchLink.textContent = 'Regístrate aquí';
+        } else {
+            authTitle.innerHTML = '<i class="fas fa-user-plus"></i> Crear Cuenta';
+            authBtn.textContent = 'Registrarse';
+            authSwitchText.textContent = '¿Ya tienes cuenta?';
+            authSwitchLink.textContent = 'Inicia sesión aquí';
+        }
+        clearMessages();
+    });
+
+    // Cerrar sesión
+    logoutBtn.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        authSection.style.display = 'block';
+        dashboard.style.display = 'none';
+        authEmail.value = '';
+        authPassword.value = '';
+        clearMessages();
+    });
+
+    // Botones para cargar tablas
+    document.querySelectorAll('[data-table]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const table = btn.getAttribute('data-table');
+            loadTableData(table);
+        });
+    });
+
+    // ============================================================
+    // 7. INICIALIZAR
+    // ============================================================
+    checkSession();
+</script>
+</body>
+</html>
